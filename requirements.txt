@@ -1,0 +1,9 @@
+requests
+gevent
+flask
+image
+xmltodict
+selenium
+selenium-wire
+m3u8
+lxml
