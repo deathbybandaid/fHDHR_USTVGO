@@ -48,6 +48,10 @@ class OriginService():
         with open(self.m3ucache, 'w') as m3ufile:
             m3ufile.write(json.dumps(self.cached_m3u, indent=4))
 
+    def get_status_dict(self):
+        ret_status_dict = {}
+        return ret_status_dict
+
     def get_channels(self):
         channel_list = []
 
