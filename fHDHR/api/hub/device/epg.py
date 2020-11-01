@@ -6,7 +6,7 @@ from collections import OrderedDict
 from multiprocessing import Process
 
 from fHDHR.origin import origin_epg
-from .epgtypes import blocks
+from .epgtypes import blocks, zap2it
 
 
 class EPG():
