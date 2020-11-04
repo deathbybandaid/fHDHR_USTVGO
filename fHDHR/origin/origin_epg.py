@@ -4,16 +4,12 @@ import json
 import urllib.request
 
 
-import fHDHR.tools
+class OriginEPG():
 
-
-class originEPG():
-
-    def __init__(self, settings, channels):
+    def __init__(self, settings, logger, web):
         self.config = settings
-        self.channels = channels
-
-        self.web = fHDHR.tools.WebReq()
+        self.logger = logger
+        self.web = web
 
         self.web_cache_dir = self.config.dict["filedir"]["epg_cache"]["origin"]["web_cache"]
 
@@ -32,16 +28,66 @@ class originEPG():
         tm = str(tm.strftime('%Y%m%d%H%M%S')) + " +0000"
         return tm
 
-    def update_epg(self):
+    def update_epg(self, fhdhr_channels):
         programguide = {}
+
+        timestamps = []
+        todaydate = datetime.date.today()
+        for x in range(0, 6):
+            xdate = todaydate + datetime.timedelta(days=x)
+            xtdate = xdate + datetime.timedelta(days=1)
+
+            for hour in range(0, 24):
+                time_start = datetime.datetime.combine(xdate, datetime.time(hour, 0))
+                if hour + 1 < 24:
+                    time_end = datetime.datetime.combine(xdate, datetime.time(hour + 1, 0))
+                else:
+                    time_end = datetime.datetime.combine(xtdate, datetime.time(0, 0))
+                timestampdict = {
+                                "time_start": str(time_start.strftime('%Y%m%d%H%M%S')) + " +0000",
+                                "time_end": str(time_end.strftime('%Y%m%d%H%M%S')) + " +0000",
+                                }
+                timestamps.append(timestampdict)
 
         todaydate = datetime.date.today()
 
         self.remove_stale_cache(todaydate)
 
-        for c in self.channels.get_channels():
+        for c in fhdhr_channels.get_channels():
             jsonid = self.scrape_json_id(c["callsign"])
-            if jsonid:
+            if not jsonid:
+                if str(c["number"]) not in list(programguide.keys()):
+                    programguide[str(c["number"])] = {
+                                                        "callsign": c["callsign"],
+                                                        "name": c["name"],
+                                                        "number": c["number"],
+                                                        "id": str(c["id"]),
+                                                        "thumbnail": None,
+                                                        "listing": [],
+                                                        }
+
+                for timestamp in timestamps:
+                    clean_prog_dict = {
+                                        "time_start": timestamp['time_start'],
+                                        "time_end": timestamp['time_end'],
+                                        "duration_minutes": 60,
+                                        "thumbnail": None,
+                                        "title": "Unavailable",
+                                        "sub-title": "Unavailable",
+                                        "description": "Unavailable",
+                                        "rating": "N/A",
+                                        "episodetitle": None,
+                                        "releaseyear": None,
+                                        "genres": [],
+                                        "seasonnumber": None,
+                                        "episodenumber": None,
+                                        "isnew": False,
+                                        "id": str(c["id"]) + "_" + str(timestamp['time_start']).split(" ")[0],
+                                        }
+
+                    programguide[str(c["number"])]["listing"].append(clean_prog_dict)
+
+            else:
                 if str(c["number"]) not in list(programguide.keys()):
                     programguide[str(c["number"])] = {
                                                         "callsign": c["callsign"],
@@ -88,17 +134,17 @@ class originEPG():
     def get_cached(self, jsonid, cache_key, url):
         cache_path = self.web_cache_dir.joinpath(jsonid + "_" + str(cache_key))
         if cache_path.is_file():
-            print('FROM CACHE:', str(cache_path))
+            self.logger.info('FROM CACHE:  ' + str(cache_path))
             with open(cache_path, 'rb') as f:
                 return f.read()
         else:
-            print('Fetching:  ', url)
+            self.logger.info('Fetching:  ' + url)
             try:
                 resp = urllib.request.urlopen(url)
                 result = resp.read()
             except urllib.error.HTTPError as e:
                 if e.code == 400:
-                    print('Got a 400 error!  Ignoring it.')
+                    self.logger.error('Got a 400 error!  Ignoring it.')
                     result = (
                         b'{'
                         b'"note": "Got a 400 error at this time, skipping.",'
@@ -118,7 +164,7 @@ class originEPG():
                 if cachedate >= todaysdate:
                     continue
             except Exception as e:
-                print(e)
+                self.logger.error(e)
                 pass
-            print('Removing stale cache file:', p.name)
+            self.logger.info('Removing stale cache file:  ' + p.name)
             p.unlink()

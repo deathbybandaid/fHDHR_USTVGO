@@ -9,8 +9,6 @@ from seleniumwire import webdriver
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
-import fHDHR.tools
-
 IFRAME_CSS_SELECTOR = '.iframe-container>iframe'
 
 
@@ -24,12 +22,13 @@ def enablePrint():
     sys.stdout = sys.__stdout__
 
 
-class OriginService():
+class OriginChannels():
 
-    def __init__(self, settings):
+    def __init__(self, settings, origin, logger, web):
         self.config = settings
-
-        self.web = fHDHR.tools.WebReq()
+        self.origin = origin
+        self.logger = logger
+        self.web = web
 
         self.cache_dir = self.config.dict["filedir"]["epg_cache"]["origin"]["top"]
         self.m3ucache = pathlib.Path(self.cache_dir).joinpath('m3ucache.json')
@@ -39,18 +38,14 @@ class OriginService():
 
     def load_m3u_cache(self):
         if os.path.isfile(self.m3ucache):
-            print("Loading Previously Saved Channel m3u.")
+            self.logger.info("Loading Previously Saved Channel m3u.")
             with open(self.m3ucache, 'r') as m3ufile:
                 self.cached_m3u = json.load(m3ufile)
 
     def save_m3u_cache(self):
-        print("Saving Channel Numbers.")
+        self.logger.info("Saving Channel m3u cache.")
         with open(self.m3ucache, 'w') as m3ufile:
             m3ufile.write(json.dumps(self.cached_m3u, indent=4))
-
-    def get_status_dict(self):
-        ret_status_dict = {}
-        return ret_status_dict
 
     def get_channels(self):
         channel_list = []
@@ -134,7 +129,7 @@ class OriginService():
         try:
             iframe = driver.find_element_by_css_selector(IFRAME_CSS_SELECTOR)
         except NoSuchElementException:
-            print('Video frame is not found for channel')
+            self.logger.error('Video frame is not found for channel')
             return None
 
         # Detect VPN-required channels
@@ -148,7 +143,7 @@ class OriginService():
             driver.switch_to.default_content()
 
         if need_vpn:
-            print('Channel needs VPN to be grabbed.')
+            self.logger.warning('Channel needs VPN to be grabbed.')
             return None
 
         # Autoplay
@@ -157,7 +152,7 @@ class OriginService():
         try:
             playlist = driver.wait_for_request('/playlist.m3u8', timeout=10)
         except TimeoutException:
-            print('Channel m3u8 not found.')
+            self.logger.error('Channel m3u8 not found.')
             return None
 
         streamurl = str(playlist)
