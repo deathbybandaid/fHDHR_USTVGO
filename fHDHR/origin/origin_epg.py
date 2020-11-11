@@ -6,15 +6,13 @@ import urllib.request
 
 class OriginEPG():
 
-    def __init__(self, settings, logger, web):
-        self.config = settings
-        self.logger = logger
-        self.web = web
+    def __init__(self, fhdhr):
+        self.fhdhr = fhdhr
 
-        self.web_cache_dir = self.config.dict["filedir"]["epg_cache"]["origin"]["web_cache"]
+        self.fhdhr.web_cache_dir = self.fhdhr.config.dict["filedir"]["epg_cache"]["origin"]["web_cache"]
 
     def scrape_json_id(self, callsign):
-        chanpage = self.web.session.get("https://ustvgo.tv/" + callsign)
+        chanpage = self.fhdhr.web.session.get("https://ustvgo.tv/" + callsign)
         tree = html.fromstring(chanpage.content)
         jsonid_xpath = "/html/body/div[1]/div[1]/div/div[1]/div/article/div/div[3]/iframe/@src"
         try:
@@ -132,19 +130,19 @@ class OriginEPG():
         return programguide
 
     def get_cached(self, jsonid, cache_key, url):
-        cache_path = self.web_cache_dir.joinpath(jsonid + "_" + str(cache_key))
+        cache_path = self.fhdhr.web_cache_dir.joinpath(jsonid + "_" + str(cache_key))
         if cache_path.is_file():
-            self.logger.info('FROM CACHE:  ' + str(cache_path))
+            self.fhdhr.logger.info('FROM CACHE:  ' + str(cache_path))
             with open(cache_path, 'rb') as f:
                 return f.read()
         else:
-            self.logger.info('Fetching:  ' + url)
+            self.fhdhr.logger.info('Fetching:  ' + url)
             try:
                 resp = urllib.request.urlopen(url)
                 result = resp.read()
             except urllib.error.HTTPError as e:
                 if e.code == 400:
-                    self.logger.error('Got a 400 error!  Ignoring it.')
+                    self.fhdhr.logger.error('Got a 400 error!  Ignoring it.')
                     result = (
                         b'{'
                         b'"note": "Got a 400 error at this time, skipping.",'
@@ -157,14 +155,14 @@ class OriginEPG():
             return result
 
     def remove_stale_cache(self, todaydate):
-        for p in self.web_cache_dir.glob('*'):
+        for p in self.fhdhr.web_cache_dir.glob('*'):
             try:
                 cachedate = datetime.datetime.strptime(str(p.name).split("_")[-1], "%Y-%m-%d")
                 todaysdate = datetime.datetime.strptime(str(todaydate), "%Y-%m-%d")
                 if cachedate >= todaysdate:
                     continue
             except Exception as e:
-                self.logger.error(e)
+                self.fhdhr.logger.error(e)
                 pass
-            self.logger.info('Removing stale cache file:  ' + p.name)
+            self.fhdhr.logger.info('Removing stale cache file:  ' + p.name)
             p.unlink()

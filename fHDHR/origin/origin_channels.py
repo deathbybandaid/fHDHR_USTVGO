@@ -24,13 +24,11 @@ def enablePrint():
 
 class OriginChannels():
 
-    def __init__(self, settings, origin, logger, web):
-        self.config = settings
+    def __init__(self, fhdhr, origin):
+        self.fhdhr = fhdhr
         self.origin = origin
-        self.logger = logger
-        self.web = web
 
-        self.cache_dir = self.config.dict["filedir"]["epg_cache"]["origin"]["top"]
+        self.cache_dir = self.fhdhr.config.dict["filedir"]["epg_cache"]["origin"]["top"]
         self.m3ucache = pathlib.Path(self.cache_dir).joinpath('m3ucache.json')
 
         self.cached_m3u = {}
@@ -38,12 +36,12 @@ class OriginChannels():
 
     def load_m3u_cache(self):
         if os.path.isfile(self.m3ucache):
-            self.logger.info("Loading Previously Saved Channel m3u.")
+            self.fhdhr.logger.info("Loading Previously Saved Channel m3u.")
             with open(self.m3ucache, 'r') as m3ufile:
                 self.cached_m3u = json.load(m3ufile)
 
     def save_m3u_cache(self):
-        self.logger.info("Saving Channel m3u cache.")
+        self.fhdhr.logger.info("Saving Channel m3u cache.")
         with open(self.m3ucache, 'w') as m3ufile:
             m3ufile.write(json.dumps(self.cached_m3u, indent=4))
 
@@ -72,7 +70,7 @@ class OriginChannels():
             streamurl = self.cached_m3u[chandict["callsign"]]
         else:
             streamurl = self.get_ustvgo_stream(chandict)
-            # if self.config.dict["origin"]["force_best"]:
+            # if self.fhdhr.config.dict["origin"]["force_best"]:
             streamurl = self.m3u8_beststream(streamurl)
 
         streamdict = {"number": chandict["number"], "stream_url": streamurl}
@@ -99,7 +97,7 @@ class OriginChannels():
 
     def scrape_channels(self):
         channels_url = "https://ustvgo.tv/"
-        chanpage = self.web.session.get(channels_url)
+        chanpage = self.fhdhr.web.session.get(channels_url)
         tree = html.fromstring(chanpage.content)
 
         channel_names_xpath = "/html/body/div[1]/div[1]/div/div[2]/div/div/div/article/div[1]/ol/li[*]/strong/a/text()"
@@ -129,7 +127,7 @@ class OriginChannels():
         try:
             iframe = driver.find_element_by_css_selector(IFRAME_CSS_SELECTOR)
         except NoSuchElementException:
-            self.logger.error('Video frame is not found for channel')
+            self.fhdhr.logger.error('Video frame is not found for channel')
             return None
 
         # Detect VPN-required channels
@@ -143,7 +141,7 @@ class OriginChannels():
             driver.switch_to.default_content()
 
         if need_vpn:
-            self.logger.warning('Channel needs VPN to be grabbed.')
+            self.fhdhr.logger.warning('Channel needs VPN to be grabbed.')
             return None
 
         # Autoplay
@@ -152,7 +150,7 @@ class OriginChannels():
         try:
             playlist = driver.wait_for_request('/playlist.m3u8', timeout=10)
         except TimeoutException:
-            self.logger.error('Channel m3u8 not found.')
+            self.fhdhr.logger.error('Channel m3u8 not found.')
             return None
 
         streamurl = str(playlist)
