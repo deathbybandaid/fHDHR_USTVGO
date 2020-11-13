@@ -1,7 +1,5 @@
 from lxml import html
 import datetime
-import json
-import urllib.request
 
 
 class OriginEPG():
@@ -97,72 +95,92 @@ class OriginEPG():
                                                         }
 
                 epg_url = "https://ustvgo.tv/tvguide/json/" + jsonid + ".json"
-                result = self.get_cached(jsonid, todaydate, epg_url)
-
+                progtimes = self.get_cached(jsonid, todaydate, epg_url)
                 events = []
+                if progtimes:
+                    for progtime in list(progtimes["items"].keys()):
+                        events.extend(progtimes["items"][progtime])
 
-                progtimes = json.loads(result)
-                for progtime in list(progtimes["items"].keys()):
-                    events.extend(progtimes["items"][progtime])
+                    for event in events:
 
-                for event in events:
+                        clean_prog_dict = {
+                                            "time_start": self.ustogo_xmltime(event["start_timestamp"]),
+                                            "time_end": self.ustogo_xmltime(event["end_timestamp"]),
+                                            "duration_minutes": 60,
+                                            "thumbnail": event["image"],
+                                            "title": event["name"],
+                                            "sub-title": "Unavailable",
+                                            "description": event["description"],
+                                            "rating": "N/A",
+                                            "episodetitle": None,
+                                            "releaseyear": None,
+                                            "genres": [],
+                                            "seasonnumber": None,
+                                            "episodenumber": None,
+                                            "isnew": False,
+                                            "id": event["id"],
+                                            }
 
-                    clean_prog_dict = {
-                                        "time_start": self.ustogo_xmltime(event["start_timestamp"]),
-                                        "time_end": self.ustogo_xmltime(event["end_timestamp"]),
-                                        "duration_minutes": 60,
-                                        "thumbnail": event["image"],
-                                        "title": event["name"],
-                                        "sub-title": "Unavailable",
-                                        "description": event["description"],
-                                        "rating": "N/A",
-                                        "episodetitle": None,
-                                        "releaseyear": None,
-                                        "genres": [],
-                                        "seasonnumber": None,
-                                        "episodenumber": None,
-                                        "isnew": False,
-                                        "id": event["id"],
-                                        }
+                        programguide[str(c["number"])]["listing"].append(clean_prog_dict)
+                else:
 
-                    programguide[str(c["number"])]["listing"].append(clean_prog_dict)
+                    for timestamp in timestamps:
+                        clean_prog_dict = {
+                                            "time_start": timestamp['time_start'],
+                                            "time_end": timestamp['time_end'],
+                                            "duration_minutes": 60,
+                                            "thumbnail": None,
+                                            "title": "Unavailable",
+                                            "sub-title": "Unavailable",
+                                            "description": "Unavailable",
+                                            "rating": "N/A",
+                                            "episodetitle": None,
+                                            "releaseyear": None,
+                                            "genres": [],
+                                            "seasonnumber": None,
+                                            "episodenumber": None,
+                                            "isnew": False,
+                                            "id": str(c["id"]) + "_" + str(timestamp['time_start']).split(" ")[0],
+                                            }
+
+                        programguide[str(c["number"])]["listing"].append(clean_prog_dict)
 
         return programguide
 
     def get_cached(self, jsonid, cache_key, url):
-        cache_path = self.fhdhr.web_cache_dir.joinpath(jsonid + "_" + str(cache_key))
-        if cache_path.is_file():
-            self.fhdhr.logger.info('FROM CACHE:  ' + str(cache_path))
-            with open(cache_path, 'rb') as f:
-                return f.read()
+        cacheitem = self.fhdhr.db.get_cacheitem_value(jsonid + "_" + str(cache_key), "offline_cache", "origin")
+        if cacheitem:
+            self.fhdhr.logger.info('FROM CACHE:  ' + jsonid + "_" + str(cache_key))
+            return cacheitem
         else:
             self.fhdhr.logger.info('Fetching:  ' + url)
             try:
-                resp = urllib.request.urlopen(url)
-                result = resp.read()
-            except urllib.error.HTTPError as e:
-                if e.code == 400:
-                    self.fhdhr.logger.error('Got a 400 error!  Ignoring it.')
-                    result = (
-                        b'{'
-                        b'"note": "Got a 400 error at this time, skipping.",'
-                        b'"channels": []'
-                        b'}')
-                else:
-                    raise
-            with open(cache_path, 'wb') as f:
-                f.write(result)
-            return result
+                resp = self.fhdhr.web.session.get(url)
+            except self.fhdhr.web.exceptions.HTTPError:
+                self.fhdhr.logger.info('Got an error!  Ignoring it.')
+                return
+            result = resp.json()
+
+            self.fhdhr.db.set_cacheitem_value(jsonid + "_" + str(cache_key), "offline_cache", result, "origin")
+            cache_list = self.fhdhr.db.get_cacheitem_value("cache_list", "offline_cache", "origin") or []
+            cache_list.append(jsonid + "_" + str(cache_key))
+            self.fhdhr.db.set_cacheitem_value("cache_list", "offline_cache", cache_list, "origin")
 
     def remove_stale_cache(self, todaydate):
-        for p in self.fhdhr.web_cache_dir.glob('*'):
-            try:
-                cachedate = datetime.datetime.strptime(str(p.name).split("_")[-1], "%Y-%m-%d")
-                todaysdate = datetime.datetime.strptime(str(todaydate), "%Y-%m-%d")
-                if cachedate >= todaysdate:
-                    continue
-            except Exception as e:
-                self.fhdhr.logger.error(e)
-                pass
-            self.fhdhr.logger.info('Removing stale cache file:  ' + p.name)
-            p.unlink()
+        cache_list = self.fhdhr.db.get_cacheitem_value("cache_list", "offline_cache", "origin") or []
+        cache_to_kill = []
+        for cacheitem in cache_list:
+            cachedate = datetime.datetime.strptime(str(cacheitem).split("_")[-1], "%Y-%m-%d")
+            todaysdate = datetime.datetime.strptime(str(todaydate), "%Y-%m-%d")
+            if cachedate < todaysdate:
+                cache_to_kill.append(cacheitem)
+                self.fhdhr.db.delete_cacheitem_value(cacheitem, "offline_cache", "origin")
+                self.fhdhr.logger.info('Removing stale cache:  ' + str(cacheitem))
+        self.fhdhr.db.set_cacheitem_value("cache_list", "offline_cache", [x for x in cache_list if x not in cache_to_kill], "origin")
+
+    def clear_cache(self):
+        cache_list = self.fhdhr.db.get_cacheitem_value("cache_list", "offline_cache", "origin") or []
+        for cacheitem in cache_list:
+            self.fhdhr.db.delete_cacheitem_value(cacheitem, "offline_cache", "origin")
+            self.fhdhr.logger.info('Removing cache:  ' + str(cacheitem))
+        self.fhdhr.db.delete_cacheitem_value("cache_list", "offline_cache", "origin")
