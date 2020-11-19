@@ -1,8 +1,6 @@
 import os
 import sys
 from lxml import html
-import pathlib
-import json
 import m3u8
 
 from seleniumwire import webdriver
@@ -27,23 +25,6 @@ class OriginChannels():
     def __init__(self, fhdhr, origin):
         self.fhdhr = fhdhr
         self.origin = origin
-
-        self.cache_dir = self.fhdhr.config.dict["filedir"]["epg_cache"]["origin"]["top"]
-        self.m3ucache = pathlib.Path(self.cache_dir).joinpath('m3ucache.json')
-
-        self.cached_m3u = {}
-        self.load_m3u_cache()
-
-    def load_m3u_cache(self):
-        if os.path.isfile(self.m3ucache):
-            self.fhdhr.logger.info("Loading Previously Saved Channel m3u.")
-            with open(self.m3ucache, 'r') as m3ufile:
-                self.cached_m3u = json.load(m3ufile)
-
-    def save_m3u_cache(self):
-        self.fhdhr.logger.info("Saving Channel m3u cache.")
-        with open(self.m3ucache, 'w') as m3ufile:
-            m3ufile.write(json.dumps(self.cached_m3u, indent=4))
 
     def get_channels(self):
         channel_list = []
@@ -157,8 +138,6 @@ class OriginChannels():
 
         driver.close()
         driver.quit()
-        self.cached_m3u[chandict["callsign"]] = streamurl
-        self.save_m3u_cache()
         return streamurl
 
     def get_firefox_driver(self):

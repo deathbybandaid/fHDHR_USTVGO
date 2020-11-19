@@ -7,8 +7,6 @@ class OriginEPG():
     def __init__(self, fhdhr):
         self.fhdhr = fhdhr
 
-        self.fhdhr.web_cache_dir = self.fhdhr.config.dict["filedir"]["epg_cache"]["origin"]["web_cache"]
-
     def scrape_json_id(self, callsign):
         chanpage = self.fhdhr.web.session.get("https://ustvgo.tv/" + callsign)
         tree = html.fromstring(chanpage.content)
