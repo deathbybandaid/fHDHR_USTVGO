@@ -29,6 +29,6 @@ Please Check the repository wiki for Installation information.
 Join us in `#fHDHR <irc://irc.freenode.net/#fHDHR>`_ on Freenode.
 
 
-THIS FORK DOES NOT WORK completely. Streams don't play, but channels and EPG work great.
+THIS FORK IS BUGGY, but kinda works.
 
 Due to multiple issues, I'm dropping support for Windows. Sorry. I'll accept PRs to alleviate this.
