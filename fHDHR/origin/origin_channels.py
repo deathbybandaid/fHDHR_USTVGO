@@ -47,11 +47,8 @@ class OriginChannels():
         streamlist = []
         streamdict = {}
 
-        if chandict["callsign"] in list(self.cached_m3u):
-            streamurl = self.cached_m3u[chandict["callsign"]]
-        else:
-            streamurl = self.get_ustvgo_stream(chandict)
-            # if self.fhdhr.config.dict["origin"]["force_best"]:
+        streamurl = self.get_ustvgo_stream(chandict)
+        if self.fhdhr.config.dict["origin"]["force_best"]:
             streamurl = self.m3u8_beststream(streamurl)
 
         streamdict = {"number": chandict["number"], "stream_url": streamurl}
