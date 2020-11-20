@@ -88,7 +88,7 @@ class OriginEPG():
                                                         "name": c["name"],
                                                         "number": c["number"],
                                                         "id": str(c["origin_id"]),
-                                                        "thumbnail": "https://static.streamlive.to/images/tv/" + jsonid + ".JPG",
+                                                        "thumbnail": "https://static.streamlive.to/images/tv/" + jsonid + ".png",
                                                         "listing": [],
                                                         }
 
