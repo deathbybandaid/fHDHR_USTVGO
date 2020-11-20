@@ -35,6 +35,7 @@ class OriginChannels():
         for name, url in zip(chan_names, chan_urls):
             chan_dict = {
                         "name": name.rstrip(),
+                        "id": name.rstrip(),
                         "number": chan_number_index,
                         "callsign": self.format_callsign(url),
                         }
@@ -42,19 +43,11 @@ class OriginChannels():
             chan_number_index += 1
         return channel_list
 
-    def get_channel_stream(self, chandict, allchandict):
-        caching = True
-        streamlist = []
-        streamdict = {}
-
+    def get_channel_stream(self, chandict):
         streamurl = self.get_ustvgo_stream(chandict)
         if self.fhdhr.config.dict["origin"]["force_best"]:
             streamurl = self.m3u8_beststream(streamurl)
-
-        streamdict = {"number": chandict["number"], "stream_url": streamurl}
-
-        streamlist.append(streamdict)
-        return streamlist, caching
+        return streamurl
 
     def m3u8_beststream(self, m3u8_url):
         bestStream = None

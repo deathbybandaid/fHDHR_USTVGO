@@ -55,7 +55,7 @@ class OriginEPG():
                                                         "callsign": c["callsign"],
                                                         "name": c["name"],
                                                         "number": c["number"],
-                                                        "id": str(c["id"]),
+                                                        "id": str(c["origin_id"]),
                                                         "thumbnail": None,
                                                         "listing": [],
                                                         }
@@ -76,7 +76,7 @@ class OriginEPG():
                                         "seasonnumber": None,
                                         "episodenumber": None,
                                         "isnew": False,
-                                        "id": str(c["id"]) + "_" + str(timestamp['time_start']).split(" ")[0],
+                                        "id": str(c["origin_id"]) + "_" + str(timestamp['time_start']).split(" ")[0],
                                         }
 
                     programguide[str(c["number"])]["listing"].append(clean_prog_dict)
@@ -87,8 +87,8 @@ class OriginEPG():
                                                         "callsign": c["callsign"],
                                                         "name": c["name"],
                                                         "number": c["number"],
-                                                        "id": str(c["id"]),
-                                                        "thumbnail": "https://static.streamlive.to/images/tv/" + jsonid + ".JPG",
+                                                        "id": str(c["origin_id"]),
+                                                        "thumbnail": "https://static.streamlive.to/images/tv/" + jsonid + ".png",
                                                         "listing": [],
                                                         }
 
@@ -138,7 +138,7 @@ class OriginEPG():
                                             "seasonnumber": None,
                                             "episodenumber": None,
                                             "isnew": False,
-                                            "id": str(c["id"]) + "_" + str(timestamp['time_start']).split(" ")[0],
+                                            "id": str(c["origin_id"]) + "_" + str(timestamp['time_start']).split(" ")[0],
                                             }
 
                         programguide[str(c["number"])]["listing"].append(clean_prog_dict)
