@@ -47,18 +47,14 @@ class OriginEPG():
 
         self.remove_stale_cache(todaydate)
 
-        for c in fhdhr_channels.get_channels():
-            jsonid = self.scrape_json_id(c["callsign"])
+        for fhdhr_id in list(fhdhr_channels.list.keys()):
+            chan_obj = fhdhr_channels.list[fhdhr_id]
+
+            if str(chan_obj.dict["number"]) not in list(programguide.keys()):
+                programguide[str(chan_obj.dict["number"])] = chan_obj.epgdict
+
+            jsonid = self.scrape_json_id(chan_obj.dict["callsign"])
             if not jsonid:
-                if str(c["number"]) not in list(programguide.keys()):
-                    programguide[str(c["number"])] = {
-                                                        "callsign": c["callsign"],
-                                                        "name": c["name"],
-                                                        "number": c["number"],
-                                                        "id": str(c["origin_id"]),
-                                                        "thumbnail": None,
-                                                        "listing": [],
-                                                        }
 
                 for timestamp in timestamps:
                     clean_prog_dict = {
@@ -76,21 +72,12 @@ class OriginEPG():
                                         "seasonnumber": None,
                                         "episodenumber": None,
                                         "isnew": False,
-                                        "id": str(c["origin_id"]) + "_" + str(timestamp['time_start']).split(" ")[0],
+                                        "id": str(chan_obj.dict["origin_id"]) + "_" + str(timestamp['time_start']).split(" ")[0],
                                         }
 
-                    programguide[str(c["number"])]["listing"].append(clean_prog_dict)
+                    programguide[str(chan_obj.dict["number"])]["listing"].append(clean_prog_dict)
 
             else:
-                if str(c["number"]) not in list(programguide.keys()):
-                    programguide[str(c["number"])] = {
-                                                        "callsign": c["callsign"],
-                                                        "name": c["name"],
-                                                        "number": c["number"],
-                                                        "id": str(c["origin_id"]),
-                                                        "thumbnail": "https://static.streamlive.to/images/tv/" + jsonid + ".png",
-                                                        "listing": [],
-                                                        }
 
                 epg_url = "https://ustvgo.tv/tvguide/json/" + jsonid + ".json"
                 progtimes = self.get_cached(jsonid, todaydate, epg_url)
@@ -119,7 +106,9 @@ class OriginEPG():
                                             "id": event["id"],
                                             }
 
-                        programguide[str(c["number"])]["listing"].append(clean_prog_dict)
+                        if not any(d['id'] == clean_prog_dict['id'] for d in programguide[str(chan_obj.dict["number"])]["listing"]):
+                            programguide[str(chan_obj.dict["number"])]["listing"].append(clean_prog_dict)
+
                 else:
 
                     for timestamp in timestamps:
@@ -138,10 +127,11 @@ class OriginEPG():
                                             "seasonnumber": None,
                                             "episodenumber": None,
                                             "isnew": False,
-                                            "id": str(c["origin_id"]) + "_" + str(timestamp['time_start']).split(" ")[0],
+                                            "id": str(chan_obj.dict["origin_id"]) + "_" + str(timestamp['time_start']).split(" ")[0],
                                             }
 
-                        programguide[str(c["number"])]["listing"].append(clean_prog_dict)
+                        if not any(d['id'] == clean_prog_dict['id'] for d in programguide[str(chan_obj.dict["number"])]["listing"]):
+                            programguide[str(chan_obj.dict["number"])]["listing"].append(clean_prog_dict)
 
         return programguide
 

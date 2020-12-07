@@ -33,14 +33,26 @@ class OriginChannels():
 
         chan_number_index = 1
         for name, url in zip(chan_names, chan_urls):
+
+            callsign = self.format_callsign(url)
+            jsonid = self.scrape_json_id(callsign)
+
+            if jsonid:
+                thumbnail = "https://static.streamlive.to/images/tv/%s.png" % jsonid
+            else:
+                thumbnail = None
+
             chan_dict = {
                         "name": name.rstrip(),
-                        "id": name.rstrip(),
+                        "id": jsonid or name.rstrip(),
                         "number": chan_number_index,
-                        "callsign": self.format_callsign(url),
+                        "callsign": callsign,
+                        "thumbnail": thumbnail,
                         }
             channel_list.append(chan_dict)
+
             chan_number_index += 1
+
         return channel_list
 
     def get_channel_stream(self, chandict):
@@ -65,6 +77,16 @@ class OriginChannels():
             return bestStream.absolute_uri
         else:
             return m3u8_url
+
+    def scrape_json_id(self, callsign):
+        chanpage = self.fhdhr.web.session.get("https://ustvgo.tv/" + callsign)
+        tree = html.fromstring(chanpage.content)
+        jsonid_xpath = "/html/body/div[1]/div[1]/div/div[1]/div/article/div/div[3]/iframe/@src"
+        try:
+            jsonid = tree.xpath(jsonid_xpath)[0].split("#")[1]
+        except IndexError:
+            jsonid = None
+        return jsonid
 
     def scrape_channels(self):
         channels_url = "https://ustvgo.tv/"
