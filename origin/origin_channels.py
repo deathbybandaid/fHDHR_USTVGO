@@ -167,7 +167,7 @@ class OriginChannels():
         firefox_profile.set_preference('dom.disable_beforeunload', True)
         firefox_profile.set_preference('browser.tabs.warnOnClose', False)
         firefox_profile.set_preference('media.volume_scale', '0.0')
-        firefox_profile.setPreference("webdriver.log.init", True)
+        firefox_profile.set_preference("webdriver.log.init", True)
 
         set_seleniumwire_options = {
                                     'connection_timeout': None,
