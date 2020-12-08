@@ -26,6 +26,8 @@ class OriginChannels():
         self.fhdhr = fhdhr
         self.origin = origin
 
+        self.setup_selenium()
+
     def get_channels(self):
         channel_list = []
 
@@ -109,29 +111,32 @@ class OriginChannels():
                     .replace('-streaming', ''))
         return callsign
 
+    def setup_selenium(self):
+        self.driver = self.get_firefox_driver()
+
     def get_ustvgo_stream(self, chandict):
-        driver = self.get_firefox_driver()
+
         # blockPrint()
-        driver.get("https://ustvgo.tv/" + chandict["callsign"])
+        self.driver.get("https://ustvgo.tv/" + chandict["callsign"])
         # enablePrint()
 
         # Get iframe
         iframe = None
         try:
-            iframe = driver.find_element_by_css_selector(IFRAME_CSS_SELECTOR)
+            iframe = self.driver.find_element_by_css_selector(IFRAME_CSS_SELECTOR)
         except NoSuchElementException:
             self.fhdhr.logger.error('Video frame is not found for channel')
             return None
 
         # Detect VPN-required channels
         try:
-            driver.switch_to.frame(iframe)
-            driver.find_element_by_xpath("//*[text()='This channel requires our VPN to watch!']")
+            self.driver.switch_to.frame(iframe)
+            self.driver.find_element_by_xpath("//*[text()='This channel requires our VPN to watch!']")
             need_vpn = True
         except NoSuchElementException:
             need_vpn = False
         finally:
-            driver.switch_to.default_content()
+            self.driver.switch_to.default_content()
 
         if need_vpn:
             self.fhdhr.logger.warning('Channel needs VPN to be grabbed.')
@@ -141,15 +146,15 @@ class OriginChannels():
         iframe.click()
 
         try:
-            playlist = driver.wait_for_request('/playlist.m3u8', timeout=10)
+            playlist = self.driver.wait_for_request('/playlist.m3u8', timeout=10)
         except TimeoutException:
             self.fhdhr.logger.error('Channel m3u8 not found.')
             return None
 
         streamurl = str(playlist)
 
-        driver.close()
-        driver.quit()
+        # driver.close()
+        # driver.quit()
         return streamurl
 
     def get_firefox_driver(self):
@@ -162,6 +167,7 @@ class OriginChannels():
         firefox_profile.set_preference('dom.disable_beforeunload', True)
         firefox_profile.set_preference('browser.tabs.warnOnClose', False)
         firefox_profile.set_preference('media.volume_scale', '0.0')
+        firefox_profile.setPreference("webdriver.log.init", True)
 
         set_seleniumwire_options = {
                                     'connection_timeout': None,
