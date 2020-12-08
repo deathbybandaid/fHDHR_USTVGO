@@ -111,9 +111,9 @@ class OriginChannels():
 
     def get_ustvgo_stream(self, chandict):
         driver = self.get_firefox_driver()
-        blockPrint()
+        # blockPrint()
         driver.get("https://ustvgo.tv/" + chandict["callsign"])
-        enablePrint()
+        # enablePrint()
 
         # Get iframe
         iframe = None
