@@ -17,31 +17,8 @@ class OriginEPG():
             jsonid = None
         return jsonid
 
-    def ustogo_xmltime(self, tm):
-        tm = datetime.datetime.fromtimestamp(tm)
-        tm = str(tm.strftime('%Y%m%d%H%M%S')) + " +0000"
-        return tm
-
     def update_epg(self, fhdhr_channels):
         programguide = {}
-
-        timestamps = []
-        todaydate = datetime.date.today()
-        for x in range(0, 6):
-            xdate = todaydate + datetime.timedelta(days=x)
-            xtdate = xdate + datetime.timedelta(days=1)
-
-            for hour in range(0, 24):
-                time_start = datetime.datetime.combine(xdate, datetime.time(hour, 0))
-                if hour + 1 < 24:
-                    time_end = datetime.datetime.combine(xdate, datetime.time(hour + 1, 0))
-                else:
-                    time_end = datetime.datetime.combine(xtdate, datetime.time(0, 0))
-                timestampdict = {
-                                "time_start": str(time_start.strftime('%Y%m%d%H%M%S')) + " +0000",
-                                "time_end": str(time_end.strftime('%Y%m%d%H%M%S')) + " +0000",
-                                }
-                timestamps.append(timestampdict)
 
         todaydate = datetime.date.today()
 
@@ -54,30 +31,7 @@ class OriginEPG():
                 programguide[str(chan_obj.dict["number"])] = chan_obj.epgdict
 
             jsonid = self.scrape_json_id(chan_obj.dict["callsign"])
-            if not jsonid:
-
-                for timestamp in timestamps:
-                    clean_prog_dict = {
-                                        "time_start": timestamp['time_start'],
-                                        "time_end": timestamp['time_end'],
-                                        "duration_minutes": 60,
-                                        "thumbnail": None,
-                                        "title": "Unavailable",
-                                        "sub-title": "Unavailable",
-                                        "description": "Unavailable",
-                                        "rating": "N/A",
-                                        "episodetitle": None,
-                                        "releaseyear": None,
-                                        "genres": [],
-                                        "seasonnumber": None,
-                                        "episodenumber": None,
-                                        "isnew": False,
-                                        "id": str(chan_obj.dict["origin_id"]) + "_" + str(timestamp['time_start']).split(" ")[0],
-                                        }
-
-                    programguide[str(chan_obj.dict["number"])]["listing"].append(clean_prog_dict)
-
-            else:
+            if jsonid:
 
                 epg_url = "https://ustvgo.tv/tvguide/json/" + jsonid + ".json"
                 progtimes = self.get_cached(jsonid, todaydate, epg_url)
@@ -89,9 +43,9 @@ class OriginEPG():
                     for event in events:
 
                         clean_prog_dict = {
-                                            "time_start": self.ustogo_xmltime(event["start_timestamp"]),
-                                            "time_end": self.ustogo_xmltime(event["end_timestamp"]),
-                                            "duration_minutes": 60,
+                                            "time_start": int(event["start_timestamp"]),
+                                            "time_end": int(event["end_timestamp"]),
+                                            "duration_minutes": (int(event["end_timestamp"]) - int(event["start_timestamp"])),
                                             "thumbnail": event["image"],
                                             "title": event["name"],
                                             "sub-title": "Unavailable",
@@ -106,31 +60,7 @@ class OriginEPG():
                                             "id": event["id"],
                                             }
 
-                        if not any(d['id'] == clean_prog_dict['id'] for d in programguide[str(chan_obj.dict["number"])]["listing"]):
-                            programguide[str(chan_obj.dict["number"])]["listing"].append(clean_prog_dict)
-
-                else:
-
-                    for timestamp in timestamps:
-                        clean_prog_dict = {
-                                            "time_start": timestamp['time_start'],
-                                            "time_end": timestamp['time_end'],
-                                            "duration_minutes": 60,
-                                            "thumbnail": None,
-                                            "title": "Unavailable",
-                                            "sub-title": "Unavailable",
-                                            "description": "Unavailable",
-                                            "rating": "N/A",
-                                            "episodetitle": None,
-                                            "releaseyear": None,
-                                            "genres": [],
-                                            "seasonnumber": None,
-                                            "episodenumber": None,
-                                            "isnew": False,
-                                            "id": str(chan_obj.dict["origin_id"]) + "_" + str(timestamp['time_start']).split(" ")[0],
-                                            }
-
-                        if not any(d['id'] == clean_prog_dict['id'] for d in programguide[str(chan_obj.dict["number"])]["listing"]):
+                        if not any((d['time_start'] == clean_prog_dict['time_start'] and d['id'] == clean_prog_dict['id']) for d in programguide[chan_obj.number]["listing"]):
                             programguide[str(chan_obj.dict["number"])]["listing"].append(clean_prog_dict)
 
         return programguide
