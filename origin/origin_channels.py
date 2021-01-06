@@ -55,11 +55,14 @@ class OriginChannels():
 
         return channel_list
 
-    def get_channel_stream(self, chandict):
+    def get_channel_stream(self, chandict, stream_args):
         streamurl = self.get_ustvgo_stream(chandict)
         if self.fhdhr.config.dict["origin"]["force_best"]:
             streamurl = self.m3u8_beststream(streamurl)
-        return streamurl
+
+        stream_info = {"url": streamurl}
+
+        return stream_info
 
     def m3u8_beststream(self, m3u8_url):
         bestStream = None
