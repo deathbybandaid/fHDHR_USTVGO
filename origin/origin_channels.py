@@ -36,15 +36,14 @@ class OriginChannels():
         channel_list = []
         chan_number_index = 0
         for channel_dict in entries:
-            print(channel_dict)
             chan_number_index += 1
 
             clean_station_item = {
-                                 "name": channel_dict["FullName"],
-                                 "callsign": channel_dict["Name"],
+                                 "name": channel_dict["Channel"]["FullName"],
+                                 "callsign": channel_dict["Channel"]["Name"],
                                  "number": chan_number_index,
-                                 "id": channel_dict["SourceId"],
-                                 "thumbnail": "https://static.streamlive.to/images/tv/%s.png" % channel_dict["Name"]
+                                 "id": channel_dict["Channel"]["SourceId"],
+                                 "thumbnail": "https://static.streamlive.to/images/tv/%s.png" % channel_dict["Channel"]["Name"]
                                  }
             channel_list.append(clean_station_item)
         return channel_list
