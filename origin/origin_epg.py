@@ -8,7 +8,7 @@ class OriginEPG():
         self.fhdhr = fhdhr
 
     def scrape_json_id(self, callsign):
-        chanpage = self.fhdhr.web.session.get("https://ustvgo.tv/" + callsign)
+        chanpage = self.fhdhr.web.session.get("https://ustvgo.tv/%s" % callsign)
         tree = html.fromstring(chanpage.content)
         jsonid_xpath = "/html/body/div[1]/div[1]/div/div[1]/div/article/div/div[3]/iframe/@src"
         try:
@@ -33,7 +33,7 @@ class OriginEPG():
             jsonid = self.scrape_json_id(chan_obj.dict["callsign"])
             if jsonid:
 
-                epg_url = "https://ustvgo.tv/tvguide/json/" + jsonid + ".json"
+                epg_url = "https://ustvgo.tv/tvguide/json/%s.json" % jsonid
                 progtimes = self.get_cached(jsonid, todaydate, epg_url)
                 events = []
                 if progtimes:
@@ -66,12 +66,12 @@ class OriginEPG():
         return programguide
 
     def get_cached(self, jsonid, cache_key, url):
-        cacheitem = self.fhdhr.db.get_cacheitem_value(jsonid + "_" + str(cache_key), "offline_cache", "origin")
+        cacheitem = self.fhdhr.db.get_cacheitem_value("%s_%s" % (jsonid, cache_key), "offline_cache", "origin")
         if cacheitem:
-            self.fhdhr.logger.info('FROM CACHE:  ' + jsonid + "_" + str(cache_key))
+            self.fhdhr.logger.info("FROM CACHE:  %s" % cache_key)
             return cacheitem
         else:
-            self.fhdhr.logger.info('Fetching:  ' + url)
+            self.fhdhr.logger.info("Fetching:  %s" % url)
             try:
                 resp = self.fhdhr.web.session.get(url)
             except self.fhdhr.web.exceptions.HTTPError:
@@ -79,9 +79,9 @@ class OriginEPG():
                 return
             result = resp.json()
 
-            self.fhdhr.db.set_cacheitem_value(jsonid + "_" + str(cache_key), "offline_cache", result, "origin")
+            self.fhdhr.db.set_cacheitem_value("%s_%s" % (jsonid, cache_key), "offline_cache", result, "origin")
             cache_list = self.fhdhr.db.get_cacheitem_value("cache_list", "offline_cache", "origin") or []
-            cache_list.append(jsonid + "_" + str(cache_key))
+            cache_list.append("%s_%s" % (jsonid, cache_key))
             self.fhdhr.db.set_cacheitem_value("cache_list", "offline_cache", cache_list, "origin")
 
     def remove_stale_cache(self, todaydate):
@@ -93,12 +93,12 @@ class OriginEPG():
             if cachedate < todaysdate:
                 cache_to_kill.append(cacheitem)
                 self.fhdhr.db.delete_cacheitem_value(cacheitem, "offline_cache", "origin")
-                self.fhdhr.logger.info('Removing stale cache:  ' + str(cacheitem))
+                self.fhdhr.logger.info("Removing stale cache:  %s" % cacheitem)
         self.fhdhr.db.set_cacheitem_value("cache_list", "offline_cache", [x for x in cache_list if x not in cache_to_kill], "origin")
 
     def clear_cache(self):
         cache_list = self.fhdhr.db.get_cacheitem_value("cache_list", "offline_cache", "origin") or []
         for cacheitem in cache_list:
             self.fhdhr.db.delete_cacheitem_value(cacheitem, "offline_cache", "origin")
-            self.fhdhr.logger.info('Removing cache:  ' + str(cacheitem))
+            self.fhdhr.logger.info("Removing cache:  %s" % cacheitem)
         self.fhdhr.db.delete_cacheitem_value("cache_list", "offline_cache", "origin")

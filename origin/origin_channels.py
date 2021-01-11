@@ -82,7 +82,7 @@ class OriginChannels():
             return m3u8_url
 
     def scrape_json_id(self, callsign):
-        chanpage = self.fhdhr.web.session.get("https://ustvgo.tv/" + callsign)
+        chanpage = self.fhdhr.web.session.get("https://ustvgo.tv/%s" % callsign)
         tree = html.fromstring(chanpage.content)
         jsonid_xpath = "/html/body/div[1]/div[1]/div/div[1]/div/article/div/div[3]/iframe/@src"
         try:
@@ -115,7 +115,7 @@ class OriginChannels():
     def get_ustvgo_stream(self, chandict):
         driver = self.get_firefox_driver()
         blockPrint()
-        driver.get("https://ustvgo.tv/" + chandict["callsign"])
+        driver.get("https://ustvgo.tv/%s" % chandict["callsign"])
         enablePrint()
 
         # Get iframe
