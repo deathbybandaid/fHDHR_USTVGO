@@ -1,4 +1,3 @@
-from lxml import html
 import datetime
 from json.decoder import JSONDecodeError
 
@@ -8,16 +7,6 @@ class OriginEPG():
     def __init__(self, fhdhr):
         self.fhdhr = fhdhr
 
-    def scrape_json_id(self, callsign):
-        chanpage = self.fhdhr.web.session.get("https://ustvgo.tv/%s" % callsign)
-        tree = html.fromstring(chanpage.content)
-        jsonid_xpath = "/html/body/div[1]/div[1]/div/div[1]/div/article/div/div[3]/iframe/@src"
-        try:
-            jsonid = tree.xpath(jsonid_xpath)[0].split("#")[1]
-        except IndexError:
-            jsonid = None
-        return jsonid
-
     def update_epg(self, fhdhr_channels):
         programguide = {}
 
@@ -25,44 +14,46 @@ class OriginEPG():
 
         self.remove_stale_cache(todaydate)
 
+        pulltime = datetime.datetime.combine(todaydate, datetime.time(0, 0)).timestamp()
+
         for fhdhr_id in list(fhdhr_channels.list.keys()):
             chan_obj = fhdhr_channels.list[fhdhr_id]
 
             if str(chan_obj.number) not in list(programguide.keys()):
                 programguide[str(chan_obj.number)] = chan_obj.epgdict
 
-            jsonid = self.scrape_json_id(chan_obj.dict["callsign"])
-            if jsonid:
+            epg_url = "https://ustvgo.tv/tvguide/JSON2/%s.json?%s" % (chan_obj.dict["callsign"].lower().replace("&", ""), pulltime)
+            progtimes = self.get_cached(chan_obj.dict["callsign"], todaydate, epg_url)
+            events = []
+            if progtimes:
+                for progtime in list(progtimes["items"].keys()):
+                    events.extend(progtimes["items"][progtime])
 
-                epg_url = "https://ustvgo.tv/tvguide/json/%s.json" % jsonid
-                progtimes = self.get_cached(jsonid, todaydate, epg_url)
-                events = []
-                if progtimes:
-                    for progtime in list(progtimes["items"].keys()):
-                        events.extend(progtimes["items"][progtime])
+                for event in events:
 
-                    for event in events:
+                    clean_prog_dict = {
+                                        "time_start": int(event["start_timestamp"]),
+                                        "time_end": int(event["end_timestamp"]),
+                                        "duration_minutes": (int(event["end_timestamp"]) - int(event["start_timestamp"])),
+                                        "thumbnail": None,
+                                        "title": event["name"],
+                                        "sub-title": "Unavailable",
+                                        "description": event["description"],
+                                        "rating": "N/A",
+                                        "episodetitle": None,
+                                        "releaseyear": None,
+                                        "genres": [],
+                                        "seasonnumber": None,
+                                        "episodenumber": None,
+                                        "isnew": False,
+                                        "id": event["id"],
+                                        }
 
-                        clean_prog_dict = {
-                                            "time_start": int(event["start_timestamp"]),
-                                            "time_end": int(event["end_timestamp"]),
-                                            "duration_minutes": (int(event["end_timestamp"]) - int(event["start_timestamp"])),
-                                            "thumbnail": event["image"],
-                                            "title": event["name"],
-                                            "sub-title": "Unavailable",
-                                            "description": event["description"],
-                                            "rating": "N/A",
-                                            "episodetitle": None,
-                                            "releaseyear": None,
-                                            "genres": [],
-                                            "seasonnumber": None,
-                                            "episodenumber": None,
-                                            "isnew": False,
-                                            "id": event["id"],
-                                            }
+                    if event["image"] and event["image"] != "":
+                        clean_prog_dict["thumbnail"] = event["image"]
 
-                        if not any((d['time_start'] == clean_prog_dict['time_start'] and d['id'] == clean_prog_dict['id']) for d in programguide[chan_obj.number]["listing"]):
-                            programguide[str(chan_obj.number)]["listing"].append(clean_prog_dict)
+                    if not any((d['time_start'] == clean_prog_dict['time_start'] and d['id'] == clean_prog_dict['id']) for d in programguide[chan_obj.number]["listing"]):
+                        programguide[str(chan_obj.number)]["listing"].append(clean_prog_dict)
 
         return programguide
 
