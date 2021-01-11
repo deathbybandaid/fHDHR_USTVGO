@@ -43,7 +43,7 @@ class OriginChannels():
                                  "callsign": channel_dict["Channel"]["Name"],
                                  "number": chan_number_index,
                                  "id": channel_dict["Channel"]["SourceId"],
-                                 "thumbnail": "https://static.streamlive.to/images/tv/%s.png" % channel_dict["Channel"]["Name"]
+                                 "thumbnail": "https://static.streamlive.to/images/tv/%s.png" % channel_dict["Channel"]["Name"].lower()
                                  }
             channel_list.append(clean_station_item)
         return channel_list
