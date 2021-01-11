@@ -36,6 +36,7 @@ class OriginChannels():
         channel_list = []
         chan_number_index = 0
         for channel_dict in entries:
+            print(channel_dict)
             chan_number_index += 1
 
             clean_station_item = {
