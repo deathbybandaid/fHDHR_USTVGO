@@ -1,5 +1,6 @@
 from lxml import html
 import datetime
+from json.decoder import JSONDecodeError
 
 
 class OriginEPG():
@@ -77,7 +78,12 @@ class OriginEPG():
             except self.fhdhr.web.exceptions.HTTPError:
                 self.fhdhr.logger.info('Got an error!  Ignoring it.')
                 return
-            result = resp.json()
+
+            try:
+                result = resp.json()
+            except JSONDecodeError:
+                self.fhdhr.logger.info('Got an error!  Ignoring it.')
+                return
 
             self.fhdhr.db.set_cacheitem_value("%s_%s" % (jsonid, cache_key), "offline_cache", result, "origin")
             cache_list = self.fhdhr.db.get_cacheitem_value("cache_list", "offline_cache", "origin") or []
