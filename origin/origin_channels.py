@@ -24,7 +24,7 @@ class OriginChannels():
     def __init__(self, fhdhr, origin):
         self.fhdhr = fhdhr
         self.origin = origin
-        self.auth = "c2VydmVyX3RpbWU9MS8xMS8yMDIxIDI6NTc6MjcgUE0maGFzaF92YWx1ZT0ySDQyUEQveTdkZUlzUnZnVnI2cFlnPT0mdmFsaWRtaW51dGVzPTI0MA=="
+        self.wmsAuthSign = "c2VydmVyX3RpbWU9MS8xMS8yMDIxIDI6NTc6MjcgUE0maGFzaF92YWx1ZT0ySDQyUEQveTdkZUlzUnZnVnI2cFlnPT0mdmFsaWRtaW51dGVzPTI0MA=="
 
     def get_channels(self):
 
@@ -51,6 +51,7 @@ class OriginChannels():
     def get_channel_stream(self, chandict, stream_args):
         peer_list = ["peer%s.ustv24h.live" % x for x in range(1, 9)]
         for peer_url_base in peer_list:
+            m3u8_url = "https://%s/%s/myStream/playlist.m3u8?wmsAuthSign=%s" % (peer_url_base, chandict["callsign"], self.wmsAuthSign)
             videoUrlM3u = m3u8.load(m3u8_url)
         return None
         streamurl = self.get_ustvgo_stream(chandict)
