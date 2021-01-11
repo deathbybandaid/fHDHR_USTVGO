@@ -35,7 +35,6 @@ class OriginEPG():
                                         "time_start": int(event["start_timestamp"]),
                                         "time_end": int(event["end_timestamp"]),
                                         "duration_minutes": (int(event["end_timestamp"]) - int(event["start_timestamp"])),
-                                        "thumbnail": event["image"],
                                         "title": event["name"],
                                         "sub-title": "Unavailable",
                                         "description": event["description"],
@@ -48,6 +47,9 @@ class OriginEPG():
                                         "isnew": False,
                                         "id": event["id"],
                                         }
+
+                    if event["image"] and event["image"] != "":
+                        clean_prog_dict["thumbnail"] = event["image"]
 
                     if not any((d['time_start'] == clean_prog_dict['time_start'] and d['id'] == clean_prog_dict['id']) for d in programguide[chan_obj.number]["listing"]):
                         programguide[str(chan_obj.number)]["listing"].append(clean_prog_dict)
