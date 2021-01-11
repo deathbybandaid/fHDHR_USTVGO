@@ -14,13 +14,15 @@ class OriginEPG():
 
         self.remove_stale_cache(todaydate)
 
+        dt = datetime.datetime.now().strftime('%s').timestamp()
+
         for fhdhr_id in list(fhdhr_channels.list.keys()):
             chan_obj = fhdhr_channels.list[fhdhr_id]
 
             if str(chan_obj.number) not in list(programguide.keys()):
                 programguide[str(chan_obj.number)] = chan_obj.epgdict
 
-            epg_url = "https://ustvgo.tv/tvguide/JSON2/%s.json" % chan_obj.dict["callsign"].lower().replace("&", "")
+            epg_url = "https://ustvgo.tv/tvguide/JSON2/%s.json?%s" % (chan_obj.dict["callsign"].lower().replace("&", ""), "")
             progtimes = self.get_cached(chan_obj.dict["callsign"], todaydate, epg_url)
             events = []
             if progtimes:
