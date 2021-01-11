@@ -30,7 +30,7 @@
   },
   "epg":{
           "method":{
-                    "value": "origin",
+                    "value": "blocks",
                     "config_file": true,
                     "config_web": true
                 },
