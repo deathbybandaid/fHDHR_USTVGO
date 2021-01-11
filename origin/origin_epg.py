@@ -35,6 +35,7 @@ class OriginEPG():
                                         "time_start": int(event["start_timestamp"]),
                                         "time_end": int(event["end_timestamp"]),
                                         "duration_minutes": (int(event["end_timestamp"]) - int(event["start_timestamp"])),
+                                        "thumbnail": None,
                                         "title": event["name"],
                                         "sub-title": "Unavailable",
                                         "description": event["description"],
