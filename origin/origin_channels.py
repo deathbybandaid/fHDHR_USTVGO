@@ -49,8 +49,8 @@ class OriginChannels():
         return channel_list
 
     def get_channel_stream(self, chandict, stream_args):
-        for i in range(1, 8):
-            print(i)
+        peer_list = ["peer%s.ustv24h.live" % x for x in range(1, 8)]
+        print(peer_list)
         return None
         streamurl = self.get_ustvgo_stream(chandict)
         if self.fhdhr.config.dict["origin"]["force_best"]:
