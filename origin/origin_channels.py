@@ -57,6 +57,9 @@ class OriginChannels():
                 videoUrlM3u = m3u8.load(m3u8_url, headers=videoUrl_headers)
             except Exception as e:
                 self.fhdhr.logger.warning(e)
+                videoUrlM3u = None
+            if videoUrlM3u:
+                break
         return None
         streamurl = self.get_ustvgo_stream(chandict)
 
