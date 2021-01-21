@@ -1,5 +1,6 @@
 import os
 import sys
+import m3u8
 
 from seleniumwire import webdriver
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
@@ -48,11 +49,12 @@ class OriginChannels():
         return channel_list
 
     def get_channel_stream(self, chandict, stream_args):
-        # peer_list = ["peer%s.ustv24h.live" % x for x in range(1, 9)]
-        # for peer_url_base in peer_list:
-        #    m3u8_url = "https://%s/%s/myStream/playlist.m3u8?wmsAuthSign=%s" % (peer_url_base, chandict["callsign"], self.wmsAuthSign)
-        #    videoUrlM3u = m3u8.load(m3u8_url)
-        # return None
+        peer_list = ["peer%s.ustv24h.live" % x for x in range(1, 9)]
+        videoUrl_headers = {'User-Agent': "curl/7.64.1"}
+        for peer_url_base in peer_list:
+            m3u8_url = "https://%s/%s/myStream/playlist.m3u8?wmsAuthSign=%s" % (peer_url_base, chandict["callsign"], self.wmsAuthSign)
+            videoUrlM3u = m3u8.load(m3u8_url, headers=videoUrl_headers)
+        return None
         streamurl = self.get_ustvgo_stream(chandict)
 
         stream_info = {"url": streamurl}
