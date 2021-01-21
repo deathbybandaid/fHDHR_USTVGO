@@ -53,7 +53,10 @@ class OriginChannels():
         videoUrl_headers = {'User-Agent': "curl/7.64.1"}
         for peer_url_base in peer_list:
             m3u8_url = "https://%s/%s/myStream/playlist.m3u8?wmsAuthSign=%s" % (peer_url_base, chandict["callsign"], self.wmsAuthSign)
-            videoUrlM3u = m3u8.load(m3u8_url, headers=videoUrl_headers)
+            try:
+                videoUrlM3u = m3u8.load(m3u8_url, headers=videoUrl_headers)
+            except Exception as e:
+                self.fhdhr.logger.waring(e)
         return None
         streamurl = self.get_ustvgo_stream(chandict)
 
