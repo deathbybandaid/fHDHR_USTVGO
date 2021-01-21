@@ -1,22 +1,4 @@
-import os
-import sys
 import m3u8
-
-from seleniumwire import webdriver
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
-
-IFRAME_CSS_SELECTOR = '.iframe-container>iframe'
-
-
-# Disable
-def blockPrint():
-    sys.stdout = open(os.devnull, 'w')
-
-
-# Restore
-def enablePrint():
-    sys.stdout = sys.__stdout__
 
 
 class OriginChannels():
@@ -62,70 +44,7 @@ class OriginChannels():
             if videoUrlM3u:
                 streamurl = videoUrlM3u
                 stream_info = {"url": streamurl, "headers": videoUrl_headers}
-        # streamurl = self.get_ustvgo_stream(chandict)
 
         stream_info = {"url": streamurl, "headers": videoUrl_headers}
 
         return stream_info
-
-    def get_ustvgo_stream(self, chandict):
-        driver = self.get_firefox_driver()
-        blockPrint()
-        driver.get("https://ustvgo.tv/%s" % chandict["callsign"])
-        enablePrint()
-
-        # Get iframe
-        iframe = None
-        try:
-            iframe = driver.find_element_by_css_selector(IFRAME_CSS_SELECTOR)
-        except NoSuchElementException:
-            self.fhdhr.logger.error('Video frame is not found for channel')
-            return None
-
-        # Detect VPN-required channels
-        try:
-            driver.switch_to.frame(iframe)
-            driver.find_element_by_xpath("//*[text()='This channel requires our VPN to watch!']")
-            need_vpn = True
-        except NoSuchElementException:
-            need_vpn = False
-        finally:
-            driver.switch_to.default_content()
-
-        if need_vpn:
-            self.fhdhr.logger.warning('Channel needs VPN to be grabbed.')
-            return None
-
-        # Autoplay
-        iframe.click()
-
-        try:
-            playlist = driver.wait_for_request('/playlist.m3u8', timeout=10)
-        except TimeoutException:
-            self.fhdhr.logger.error('Channel m3u8 not found.')
-            return None
-
-        streamurl = str(playlist)
-
-        driver.close()
-        driver.quit()
-        return streamurl
-
-    def get_firefox_driver(self):
-        ff_options = FirefoxOptions()
-        ff_options.add_argument('--headless')
-
-        firefox_profile = webdriver.FirefoxProfile()
-        firefox_profile.set_preference('permissions.default.image', 2)
-        firefox_profile.set_preference('dom.ipc.plugins.enabled.libflashplayer.so', 'false')
-        firefox_profile.set_preference('dom.disable_beforeunload', True)
-        firefox_profile.set_preference('browser.tabs.warnOnClose', False)
-        firefox_profile.set_preference('media.volume_scale', '0.0')
-
-        set_seleniumwire_options = {
-                                    'connection_timeout': None,
-                                    'verify_ssl': False,
-                                    'suppress_connection_errors': True
-                                    }
-        driver = webdriver.Firefox(seleniumwire_options=set_seleniumwire_options, options=ff_options, firefox_profile=firefox_profile)
-        return driver
