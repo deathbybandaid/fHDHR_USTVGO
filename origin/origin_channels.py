@@ -50,7 +50,8 @@ class OriginChannels():
 
     def get_channel_stream(self, chandict, stream_args):
         peer_list = ["peer%s.ustv24h.live" % x for x in range(1, 9)]
-        videoUrl_headers = {'User-Agent': "curl/7.64.1"}
+        videoUrl_headers = {'User-Agent': "Mozilla/5.0"}
+        streamurl = None
         for peer_url_base in peer_list:
             m3u8_url = "https://%s/%s/myStream/playlist.m3u8?wmsAuthSign=%s" % (peer_url_base, chandict["callsign"], self.wmsAuthSign)
             try:
@@ -59,11 +60,11 @@ class OriginChannels():
                 self.fhdhr.logger.warning(e)
                 videoUrlM3u = None
             if videoUrlM3u:
+                streamurl = videoUrlM3u
                 break
-        return None
-        streamurl = self.get_ustvgo_stream(chandict)
+        # streamurl = self.get_ustvgo_stream(chandict)
 
-        stream_info = {"url": streamurl}
+        stream_info = {"url": streamurl, "headers": videoUrl_headers}
 
         return stream_info
 
