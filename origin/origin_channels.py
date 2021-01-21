@@ -61,7 +61,7 @@ class OriginChannels():
                 videoUrlM3u = None
             if videoUrlM3u:
                 streamurl = videoUrlM3u
-                break
+                stream_info = {"url": streamurl, "headers": videoUrl_headers}
         # streamurl = self.get_ustvgo_stream(chandict)
 
         stream_info = {"url": streamurl, "headers": videoUrl_headers}
